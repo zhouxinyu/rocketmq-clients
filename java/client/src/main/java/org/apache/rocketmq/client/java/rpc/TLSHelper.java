@@ -31,11 +31,10 @@ public class TLSHelper {
     private TLSHelper() {
     }
 
-    public static String sign(String accessSecret, String dateTime) throws UnsupportedEncodingException,
-            NoSuchAlgorithmException,
-            InvalidKeyException {
+    public static String sign(String accessSecret, String dateTime) throws NoSuchAlgorithmException,
+        InvalidKeyException {
         SecretKeySpec signingKey = new SecretKeySpec(accessSecret.getBytes(StandardCharsets.UTF_8),
-                HMAC_SHA1_ALGORITHM);
+            HMAC_SHA1_ALGORITHM);
         Mac mac;
         mac = Mac.getInstance(HMAC_SHA1_ALGORITHM);
         mac.init(signingKey);

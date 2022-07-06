@@ -53,7 +53,7 @@ public class Signature {
     private Signature() {
     }
 
-    public static Metadata sign(ClientConfiguration config, String clientId) throws UnsupportedEncodingException,
+    public static Metadata sign(ClientConfiguration config, String clientId) throws
         NoSuchAlgorithmException, InvalidKeyException {
         Metadata metadata = new Metadata();
 
