@@ -156,13 +156,12 @@ impl SessionManager {
             }
         };
 
-        let access_point = Client::access_point();
         let request = QueryRouteRequest {
             topic: Some(Resource {
                 name: topic.to_owned(),
-                resource_namespace: client.arn().to_owned(),
+                resource_namespace: client.arn.clone(),
             }),
-            endpoints: Some(access_point),
+            endpoints: Some(client.access_point.clone()),
         };
 
         let mut request = tonic::Request::new(request);
@@ -208,6 +207,7 @@ pub(crate) struct Client {
     route_table: Mutex<HashMap<String /* topic */, RouteStatus>>,
     arn: String,
     id: String,
+    access_point: pb::Endpoints,
 }
 
 static CLIENT_ID_SEQUENCE: AtomicUsize = AtomicUsize::new(0);
@@ -232,29 +232,41 @@ impl Client {
         )
     }
 
-    pub(crate) fn new(logger: Logger) -> Self {
+    pub(crate) fn new(
+        logger: Logger,
+        access_url: impl std::net::ToSocketAddrs,
+    ) -> Result<Self, error::ClientError> {
         let id = Self::client_id();
-        Client {
+        let mut access_point = pb::Endpoints {
+            scheme: pb::AddressScheme::IPv4 as i32,
+            addresses: vec![],
+        };
+
+        for socket_addr in access_url
+            .to_socket_addrs()
+            .map_err(|e| error::ClientError::ClientInternal)?
+        {
+            if socket_addr.is_ipv4() {
+                access_point.scheme = pb::AddressScheme::IPv4 as i32;
+            } else {
+                access_point.scheme = pb::AddressScheme::IPv6 as i32;
+            }
+
+            let addr = pb::Address {
+                host: socket_addr.ip().to_string(),
+                port: socket_addr.port() as i32,
+            };
+            access_point.addresses.push(addr);
+        }
+
+        Ok(Client {
             session_manager: SessionManager::new(logger.new(o!("component" => "session_manager"))),
             logger,
             route_table: Mutex::new(HashMap::new()),
             arn: String::from(""),
             id,
-        }
-    }
-
-    fn access_point() -> pb::Endpoints {
-        return pb::Endpoints {
-            scheme: pb::AddressScheme::IPv4 as i32,
-            addresses: vec![pb::Address {
-                host: String::from("127.0.0.1"),
-                port: 8081,
-            }],
-        };
-    }
-
-    fn arn(&self) -> &str {
-        &self.arn
+            access_point,
+        })
     }
 
     async fn query_route(
@@ -297,9 +309,9 @@ impl Client {
             }
         }
 
-        let endpoint = "https://127.0.0.1:8081";
         let client = Arc::new(*&self);
         let client_weak = Arc::downgrade(&client);
+        let endpoint = "https://127.0.0.1:8081";
         match self
             .session_manager
             .route(endpoint, topic, client_weak)
@@ -413,12 +425,14 @@ mod tests {
         let mut session = Session::new(endpoint.to_owned(), &logger).await?;
         let topic = "cpp_sdk_standard";
 
+        let client = Client::new(logger.clone(), "localhost:8081")?;
+
         let request = pb::QueryRouteRequest {
             topic: Some(pb::Resource {
                 name: topic.to_owned(),
-                resource_namespace: String::from(""),
+                resource_namespace: client.arn.clone(),
             }),
-            endpoints: Some(Client::access_point()),
+            endpoints: Some(client.access_point.clone()),
         };
 
         let request = tonic::Request::new(request);
@@ -427,10 +441,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_client_query_route() {
-        let _endpoint = "http://localhost:8081";
-        let client = Client::new(create_logger());
+    async fn test_client_query_route() -> Result<(), error::ClientError> {
+        let access_point = "localhost:8081";
+        let client = Client::new(create_logger(), access_point)?;
         let topic = "cpp_sdk_standard";
         let _route = client.query_route(topic, true).await.unwrap();
+        Ok(())
     }
 }
