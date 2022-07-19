@@ -28,7 +28,7 @@
            ~  1. Whether it is essential, because the current shaded jar is fat enough.
            ~  2. Make sure that it is compatible with Java 8.
          -->
-        <rocketmq-proto.version>2.0.0-SNAPSHOT</rocketmq-proto.version>
+        <rocketmq-proto.version>2.0.0</rocketmq-proto.version>
         <protobuf.version>3.19.2</protobuf.version>
         <grpc.version>1.47.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
@@ -54,20 +54,20 @@
         <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>nexus</id>
-            <url>https://repository.apache.org/content/groups/public/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>nexus</id>-->
+<!--            <url>https://repository.apache.org/content/groups/public/</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--                <updatePolicy>always</updatePolicy>-->
+<!--            </releases>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--                <updatePolicy>always</updatePolicy>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <dependencyManagement>
         <dependencies>
@@ -224,6 +224,13 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <id>staged-releases</id>
+            <url>https://repository.apache.org/content/repositories/orgapacherocketmq-1091</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
